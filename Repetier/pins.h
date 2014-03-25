@@ -761,7 +761,7 @@ STEPPER_CURRENT_CONTROL
 #define PS_ON_PIN          -1
 #define KILL_PIN           -1
 
-#define HEATER_0_PIN       4//13 // (extruder)
+#define HEATER_0_PIN       13 // (extruder)
 #define HEATER_2_PIN       -1
 #ifdef REPRAPPRO_HUXLEY
 #define HEATER_1_PIN     10 // bed (change to 10 for gate pin of MOSFET on heated bed)

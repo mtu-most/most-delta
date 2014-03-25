@@ -4,23 +4,71 @@ include <NEMA17.scad>
 include <cog.scad>
 include <Triangles.scad>
 include <hotends.scad>
-include <cog.scad>
+include <belt_terminator.scad>
 
 // [w, l, t] = [y, x, z]
 $fn = 48;
 
-render_part(8);
+//render_part(9);
 
-magnet_mounts = 1;
+//plates(3);
+
+magnet_mounts = true;
+
+
+module plates(plate) {
+	if (plate == 1) {
+		for (i = [0:2])
+			rotate([0, 0, i * 120]) {
+				translate([-15, r_effector + 18, t_carriage / 2])
+					carriage(dogged = false, magnet_mounts = magnet_mounts, stage_mounts = false);
+			
+				translate([-20, r_effector + 18, 0])
+					rotate([0, 0, 90])
+						terminator(l_pass = 10, flag = false, mount = true, magnet = false);
+			
+				translate([37, r_effector + 10, 0])
+					rotate([0, 0, 90])
+							terminator(l_pass = 10, flag = 0, mount = 0);
+			}
+
+		translate([0, 0, t_effector / 2])
+			effector(dalekify = false, magnet_mounts = magnet_mounts);
+	}
+	
+	if (plate == 2) {
+		end_motor();
+		
+		translate([65, 5, 0])
+			rotate([0, 0, -60])
+				end_motor();
+		
+		translate([30, -58, 0])
+			rotate([0, 0, -60])
+				end_motor();
+	}
+
+	if (plate == 3) {
+		end_idler();
+		
+		translate([65, 5, 0])
+			rotate([0, 0, -60])
+				end_idler();
+		
+		translate([30, -58, 0])
+			rotate([0, 0, -60])
+				end_idler();
+	}
+}
 
 module render_part(part_to_render) {
 	if (part_to_render == 1) end_motor();
 
 	if (part_to_render == 2) end_idler();
 
-	if (part_to_render == 3) carriage(dogged = 0, magnet_mounts = magnet_mounts);
+	if (part_to_render == 3) carriage(dogged = false, magnet_mounts = magnet_mounts, stage_mounts = false);
 
-	if (part_to_render == 4) effector(dalekify = 0, magnet_mounts = magnet_mounts);
+	if (part_to_render == 4) effector(dalekify = false, magnet_mounts = magnet_mounts);
 
 	if (part_to_render == 5) hook();
 
@@ -35,23 +83,30 @@ module render_part(part_to_render) {
 	if (part_to_render == 10) assembly();
 
 	if (part_to_render == 11) camera_carriage();
+	
+	if (part_to_render == 12) limit_switch_mount();
 
+	if (part_to_render == 13) stage_pcb_dovetail();
+
+	if (part_to_render == 14) stage_pcb_dovetail_clamp();
 }
 
 // printer dims
-r_printer = 175; // radius of the printer
+r_printer = 203.5; // radius of the printer - typically 175; 203.5 yields exact same geometry with 12" Al rod and 3/8" bearing
+l_tie_rod = 312.477; // length of the tie rods - typically 250; with 12" Al rod + 3/8" bearing = 312.477
+l_guide_rods = 300; // length of the guide rods - only used for assembly
 
 // belt, pulley and idler dims
 od_idler = od_608; // idler OD
 id_idler = id_608; // idler id
 h_idler = h_608; // thickness of idler
-h_idler_washer = h_M8_washer; // idelr bearing washer
+h_idler_washer = h_M8_washer; // idler bearing washer
 w_belt = 6; // width of the belt (not used)
 d_pulley = 16.9; // diameter of the pulley (used to center idler)
 
 // guide rod and clamp dims
 cc_guides = 60; // center-to-center of the guide rods
-d_guides = 8.5; // diameter of the guide rods
+d_guides = 8.2;//8.5; // diameter of the guide rods
 pad_clamp = 8; // additional material around guide rods
 gap_clamp = 2; // opening for clamp
 
@@ -70,13 +125,13 @@ l_mount_slot = 2; // length of the slot for mounting screw holes
 
 // various radii and chord lengths
 a_arc_guides = asin(cc_guides / 2 / r_printer); // angle of arc between guide rods at r_printer 
-a_sep_guides = 120 - 2 * a_arc_guides; // angle of arc between nearest rods on neighboring towers
-l_chord_guides = 2 * r_printer * sin(a_sep_guides / 2); // length of chord between nearest rods on neighboring towers
-r_tower_center = pow(pow(r_printer, 2) - pow(cc_guides / 2, 2), 0.5); // radius to centerline of tower
+a_sep_guides = 120 - 2 * a_arc_guides; // angle of arc between nearest rods on neighboring apexes
+l_chord_guides = 2 * r_printer * sin(a_sep_guides / 2); // length of chord between nearest rods on neighboring apexes
+r_tower_center = pow(pow(r_printer, 2) - pow(cc_guides / 2, 2), 0.5); // radius to centerline of apex
 r_mount_pivot = pow(pow(r_tower_center, 2) + pow(cc_mount / 2, 2), 0.5); // radius to pivot point of apex mounts
-a_arc_mount = asin(cc_mount / 2 / r_mount_pivot);// angle subtended by arc struck between tower centerline and mount pivot point
-a_sep_mounts = 120 - 2 * a_arc_mount; // angle subtended by arc struck between mount pivot points between adjacent towers
-l_chord_pivots = 2 * r_mount_pivot * sin(a_sep_mounts / 2); // chord length between adjacent moint pivot points
+a_arc_mount = asin(cc_mount / 2 / r_mount_pivot);// angle subtended by arc struck between apex centerline and mount pivot point
+a_sep_mounts = 120 - 2 * a_arc_mount; // angle subtended by arc struck between mount pivot points between adjacent apexes
+l_chord_pivots = 2 * r_mount_pivot * sin(a_sep_mounts / 2); // chord length between adjacent mount pivot points
 
 // remove enough material from mount so that a logical length board can be cut to ensure adjacent mount pivot point chord lengths will yield a printer having r_printer
 l_brd = floor(l_chord_pivots / 10) * 10 - l_mount / 2; // length of the board that will be mounted between the apexs to yield r_printer
@@ -117,8 +172,6 @@ l_limit_switch = 24;
 w_limit_switch = 6;
 t_limit_switch = 14;
 
-l_guide_rods = 300; // length of the guide rods - only used for assembly
-
 // magnetic ball joint dims
 d_ball_bearing = 3 * 25.4 / 8;
 id_magnet = 15 * 25.4 / 64;
@@ -131,15 +184,16 @@ r_pad_carriage_magnet_mount = 2;
 r_pad_effector_magnet_mount = 1.5;
 
 // center-to-center of tie rod pivots
-tie_rod_length = 250;
-tie_rod_angle = acos((r_printer - r_effector - carriage_offset) / tie_rod_length);
+tie_rod_angle = acos((r_printer - r_effector - carriage_offset) / l_tie_rod);
 
+echo(str("Printer radius = ", r_printer));
+echo(str("Effector offset = ", r_effector, "mm"));
+echo(str("Carriage offset = ", carriage_offset, "mm"));
+echo(str("Printer effective radius = ", r_printer - r_effector - carriage_offset));
 echo(str("Distance between nearest neighbor guide rods = ", l_chord_guides, "mm"));
 echo(str("Radius to centerline of tower = ", r_tower_center, "mm"));
 echo(str("Radius to mount tab pivot = ", r_mount_pivot, "mm"));
 echo(str("Distance between adjacent mount pivot points = ", l_chord_pivots, "mm"));
-echo(str("Effector offset = ", r_effector, "mm"));
-echo(str("Carriage offset = ", carriage_offset, "mm"));
 echo(str("Length of linking board to yield printer radius of ", r_printer, "mm  = ", l_brd, "mm"));
 echo(str("Linking board tab thickness = ", t_clamp, "mm"));
 echo(str("Linking board hole c-c = ", cc_mount_holes, "mm"));
@@ -149,12 +203,48 @@ echo(str("Radius of base plate = ", ceil(r_printer - d_guides / 2 - 1), "mm"));
 echo(str("Tie rod angle at (0, 0, 0) = ", tie_rod_angle));
 echo(str("Effector tie rod c-c = ", l_effector, " mm"));
 
+module limit_switch_mount() {
+	difference() {
+		union() {
+			cylinder(r = d_guides / 2 + 4, h = 14, center = true);
+			
+			translate([d_guides / 2 + 2, 15, 7])
+				cube([4, 30, 28], center = true);
+				
+			translate([-3.75, d_guides - 2, 0])
+				rotate([0, 90, 0])
+					hull() {
+						cube([14, 4, 4], center = true);
+						
+						translate([0, d_M3_screw + 2, 0])
+							cylinder(r = d_M3_screw / 2 + 3, h = 4, center = true);
+				}
+		}
+
+		cylinder(r = d_guides / 2, h = 15, center = true);
+		
+		translate([d_guides / 2 - 3, 10, 0])
+			cube([6, 20, 15], center = true);
+		
+		translate([0, d_guides + 3.75, 0])
+			rotate([0, 90, 0])
+				cylinder(r = d_M3_screw / 2, h = 20, center = true);
+				
+		translate([d_guides / 2 + 2, 13 + d_guides / 2, 16])
+			rotate([0, 90, 0])
+				for (i = [-1, 1])
+					translate([0, i * 5, 0])
+						cylinder(r = 0.8, h = 6, center = true);
+	}
+}
+
 module mount_body(
 	l_base_mount,
 	w_base_mount,
 	t_base_mount,
 	r_base_mount,
-	l_slot = 0) {
+	l_linking_board_slot = 0,
+	hole_count = 3) {
 
 	difference() {
 		hull() {
@@ -170,18 +260,32 @@ module mount_body(
 
 		// screw holes to mount linking board
 		translate([0, -l_mount / 2 - l_pad_mount + floor(l_pad_mount / 2), 0])
-			for (i = [-1, 1])
-				for (j = [-1, 1])
-					translate([0, j * cc_mount_holes / 2, i * cc_mount_holes / 2])
-						rotate([0, 90, 0])
-								if (l_slot > 0)
-									hull()
-										for (k = [-1, 1])
-											translate([0, k * l_slot / 2, 0])
-												cylinder(r = d_M3_screw / 2, h = w_mount + 2, center = true);
-								else
-									cylinder(r = d_M3_screw / 2, h = w_mount + 2, center = true);
+			if (hole_count == 4)
+				for (i = [-1, 1])
+					for (j = [-1, 1])
+						translate([0, j * cc_mount_holes / 2, i * cc_mount_holes / 2])
+							linking_board_slot(l_linking_board_slot = l_linking_board_slot);
+			else if (hole_count == 3) {
+				for (i = [-1, 1])
+					translate([0, -cc_mount_holes / 2, i * cc_mount_holes / 2])
+						linking_board_slot(l_linking_board_slot = l_linking_board_slot);
+
+				translate([0, cc_mount_holes / 2, 0])
+					linking_board_slot(l_linking_board_slot = l_linking_board_slot);
+			}
 	}
+}
+
+module linking_board_slot(
+	l_linking_board_slot) {
+		rotate([0, 90, 0])
+			if (l_linking_board_slot > 0)
+				hull()
+					for (k = [-1, 1])
+						translate([0, k * l_linking_board_slot / 2, 0])
+							cylinder(r = d_M3_screw / 2, h = w_mount + 2, center = true);
+			else
+				cylinder(r = d_M3_screw / 2, h = w_mount + 2, center = true);
 }
 
 module mount(
@@ -192,7 +296,7 @@ module mount(
 			w_base_mount = w_base_mount,
 			t_base_mount = t_base_mount,
 			r_base_mount = r_base_mount,
-			l_slot = l_linking_board_slot);
+			l_linking_board_slot = l_linking_board_slot);
 
 			// boss for mounting base plate
 			translate([-w_mount / 2 - w_base_mount / 2 + r_base_mount, -l_base_mount / 2, (t_base_mount - t_clamp) / 2])
@@ -352,6 +456,7 @@ module end_idler() {
 
 		// limit switch mount
 		translate([l_clamp / 2 - 12, -w_clamp / 2, t_clamp / 2 - 6]) {
+//		translate([0, -w_clamp / 2, t_clamp / 2 - 6]) { // places the limit switch in the center of the clamp
 			cube([l_limit_switch, w_limit_switch, t_limit_switch], center = true);
 
 			rotate([90, 0, 0])
@@ -365,6 +470,8 @@ module end_idler() {
 }
 
 module end_motor() {
+	h_brace = 8; // height of cross brace triangle
+	b_brace = equilateral_base_from_height(h_brace);
 	union() {
 		difference() {
 			union() {
@@ -413,17 +520,24 @@ module end_motor() {
 		for (i = [-1, 1])
 		translate([i * cc_guides / 2, 0, t_clamp / 2 - 5])
 			cylinder(r = d_guides / 2, h = 0.25);
+
+		// cross bracing to minimize motor torquing into box
+		for (i = [-1, 1])
+			translate([i * (b_brace + 5) / 2, 0, t_clamp / 2 - h_brace])
+				rotate([90, 0, 0])
+					linear_extrude(height = w_clamp - 2, center = true)
+						equilateral(h_brace);
 	}
 }
 
 module carriage(
-	dogged = 0,
-	magnet_mounts = 1,
-	stage_mounts = 1) {
+	dogged = false,
+	magnet_mounts = false,
+	stage_mounts = false) {
 	y_web = - od_lm8uu / 2 - (3 - w_carriage_web / 2);
-	limit_x_offset = 11;
-	
+	limit_x_offset = 11; // 11 places limit switch at guide rod, otherwise center at cc_guides / 2 - 8
 	stage_mount_pad = 2.2;
+	
 	difference() {
 		union() {
 			// bearing saddles
@@ -432,14 +546,14 @@ module carriage(
 					cylinder(r = od_lm8uu / 2 + 3, h = t_carriage, center = true);
 				}
 
-			if (magnet_mounts == 1) {
+			if (magnet_mounts) {
 				// magnet mounts
 				for (i = [-1, 1])
-					translate([i * l_effector / 2, -carriage_offset, (stage_mounts == 1) ? stage_mount_pad + h_carriage_magnet_mount / sin(tie_rod_angle) : -4])
+					translate([i * l_effector / 2, -carriage_offset, (stage_mounts) ? stage_mount_pad + h_carriage_magnet_mount / sin(tie_rod_angle) : -4])
 						rotate([90 - tie_rod_angle, 0, 0])
 							magnet_mount(r_pad = r_pad_carriage_magnet_mount, h_pad = h_carriage_magnet_mount);
 							
-				if (stage_mounts == 1)
+				if (stage_mounts)
 					mirror([0, 0, 1])
 						for (i = [-1, 1])
 							translate([i * l_effector / 2, -carriage_offset, stage_mount_pad + h_carriage_magnet_mount / sin(tie_rod_angle)])
@@ -471,7 +585,7 @@ module carriage(
 			translate([0, y_web, 0])
 				cube([cc_guides, w_carriage_web, t_carriage], center = true);
 
-			if (dogged == 1)
+			if (dogged)
 				translate([d_pulley / 2, y_web, -t_carriage + 26.7225 + t_carriage / 2])
 					rotate([0, 0, 90])
 						rotate([0, 90, 0])
@@ -524,12 +638,12 @@ module carriage(
 		}
 
 		// mount for belt terminator
-		if (dogged != 1)
+		if (!dogged)
 			translate([d_pulley / 2, y_web, t_carriage / 2 - d_M3_screw / 2 - 5])
 				rotate([90, 0, 0])
 					cylinder(r = d_M3_screw / 2, h = w_carriage_web + 2, center = true);
 
-		if (magnet_mounts != 1)
+		if (!magnet_mounts)
 			// ball joint mounting screw
 			translate([0, -carriage_offset, (d_ball_socket - 1 - t_carriage) / 2]) {
 				rotate([0, 90, 0])
@@ -544,7 +658,7 @@ module carriage(
 		}
 
 		// need to flatten bottom if magnet mounts
-		if (magnet_mounts == 1)
+		if (magnet_mounts)
 			translate([0, 0, -t_carriage])
 				cube([2 * cc_guides, 4 * (od_lm8uu + 6), t_carriage], center = true);
 	}
@@ -559,7 +673,7 @@ module carriage(
 		cube([cc_guides - 8, 0.25, t_carriage], center = true);
 
 	// support for stage magnet mounts
-	if (stage_mounts == 1)
+	if (magnet_mounts && stage_mounts)
 		for (i = [-1, 1])
 			scale([1, 0.92, 1])
 			translate([i * l_effector / 2, -carriage_offset + 1, (h_carriage_magnet_mount - t_carriage) / 2])
@@ -623,11 +737,13 @@ module magnet_mount(r_pad, h_pad) {
 
 // split this out to facilitate creation of various effector mods
 module effector_base(
-	magnet_mounts = 1) {
+	magnet_mounts) {
+
+	r_apex = (magnet_mounts) ? 2.5 : 7;
 
 	difference() {
 		union() {
-			if (magnet_mounts != 1)
+			if (!magnet_mounts)
 				for (i = [0:2])
 					rotate([0, 0, i * 120])
 						translate([0, r_effector, 0])
@@ -652,47 +768,49 @@ module effector_base(
 				for(i = [0:2])
 					rotate([0, 0, i * 120])
 						translate([0, r_triangle_middle - h_triangle_inner, 0])
-							cylinder(r = (magnet_mounts == 1) ? 2.5 : r_apex, h = t_effector + 1, center = true);
+							cylinder(r = r_apex, h = t_effector + 1, center = true);
 			}
 		}
 
 		// need to flatten base if there are magnet mounts
-		if (magnet_mounts == 1)
+		if (magnet_mounts)
 			translate([0, 0, -t_effector * 2.5])
 				cylinder(r = r_effector * 2, h = t_effector * 4, center = true);
 	}
 }
 
 module stage_effector(
-	magnet_mounts = 1) {
+	magnet_mounts = false) {
 
 	difference() {
-		effector_base(magnet_mounts = 1);
+		effector_base(magnet_mounts = magnet_mounts);
 
-		for (i = [0:2])
-			rotate([0, 0, i * 120])
-				translate([0, -r_effector, 0])
-					rotate([0, 0, 30]) {
-						translate([0, 0, -t_effector / 2 - 0.25])
-							cylinder(r = d_M3_nut / 2, h = t_effector / 2, $fn = 6);
-
-						cylinder(r = d_M3_screw / 2, h = t_effector);
-
-					}
-					
-		hull()
-			for (i = [0:2])
-				rotate([0, 0, i * 120])
-					translate([0, -r_effector + 12, 0])
-						cylinder(r = 3, h = t_effector + 1, center = true);
+		stage_effector_relief();
 	}
 }
 
-module effector(
-	dalekify = 0,
-	magnet_mounts = 1) {
+module stage_effector_relief() {
+	hull()
+		for (i = [0:2])
+			rotate([0, 0, i * 120])
+				translate([0, -r_effector + 12, 0])
+					cylinder(r = 3, h = t_effector + 1, center = true);
 
-	r_apex = 7;
+	for (i = [0:2])
+		rotate([0, 0, i * 120])
+			translate([0, -r_effector, 0])
+				rotate([0, 0, 30]) {
+					translate([0, 0, -t_effector / 2 - 0.25])
+						cylinder(r = d_M3_nut / 2, h = t_effector / 2, $fn = 6);
+
+					cylinder(r = d_M3_screw / 2, h = t_effector);
+
+				}
+}
+
+module effector(
+	dalekify = false,
+	magnet_mounts = false) {
 	t_hotend_cage = t_heat_x_jhead - h_groove_jhead - h_groove_offset_jhead;
 	d_hotend_side = d_large_jhead + 8;
 	z_offset_retainer = t_hotend_cage - t_effector / 2 - 3;  // need an additional 3mm to clear the interior of the cage
@@ -708,7 +826,7 @@ module effector(
 
 difference() {
 	union() {
-		effector_base(magnet_mounts = 1);
+		effector_base(magnet_mounts = magnet_mounts);
 
 		// hot end cage
 		translate([0, 0, (t_hotend_cage - t_effector) / 2])
@@ -732,7 +850,7 @@ difference() {
 				scale([1, 1, 1.2])
 					sphere(r = r2_retainer_body);
 
-				if (dalekify == 1) {
+				if (dalekify) {
 					translate([0, 0, 0])
 						for (i = [-1, 1])
 							translate([])
@@ -786,7 +904,7 @@ difference() {
 			}
 		}
 
-			if (dalekify == 1) {
+			if (dalekify) {
 				for (i = [-1,1])
 					translate([i * (d_hotend_side / 2 - 3), 0, 3])
 						rotate([80, 0, 0])
@@ -901,7 +1019,7 @@ module hotend_cage_shape(
 	z_offset_fan,
 	a_fan_mount,
 	r_flare,
-	dalekify = 0) {
+	dalekify = false) {
 
 	h_thickness = thickness / cos(a_fan_mount); // length of hypoteneus based upon thickness of cage
 	r_dalek_spheres = 2;
@@ -909,7 +1027,7 @@ module hotend_cage_shape(
 
 	union() {
 		hull() {
-			cylinder(r1 = d_hotend_side / 2 + r_flare, r2 = d_hotend_side / 2, h = thickness, center = true, $fn = (dalekify == 1) ? 12 : 48);
+			cylinder(r1 = d_hotend_side / 2 + r_flare, r2 = d_hotend_side / 2, h = thickness, center = true, $fn = (dalekify) ? 12 : 48);
 
 			translate([0, y_offset_fan, (l_fan > h_thickness) ? z_offset_fan + (l_fan - h_thickness) / 2 : z_offset_fan])
 				rotate([90 + a_fan_mount, 0, 0])
@@ -920,7 +1038,7 @@ module hotend_cage_shape(
 						radius = 3);
 		}
 
-		if (dalekify == 1) {
+		if (dalekify) {
 			translate([0, 0, -thickness / 2])
 				for (i = [0:3])
 					translate([0, 0, i * (thickness - t_effector - r_dalek_spheres) / 4 + t_effector + r_dalek_spheres])
@@ -985,7 +1103,8 @@ module linking_board_template() {
 				l_base_mount = l_base_mount,
 				w_base_mount = w_base_mount,
 				t_base_mount = t_base_mount,
-				r_base_mount = r_base_mount);
+				r_base_mount = r_base_mount,
+				l_linking_board_slot = 0);
 		}
 
 		for (i = [-1, 0, 1])
