@@ -620,11 +620,11 @@ pins
 #define DIO30_DDR		DDRA
 #define DIO30_PWM		NULL
 
-#define DIO31_PIN		PINA0
-#define DIO31_RPORT	PINA
-#define DIO31_WPORT	PORTA
-#define DIO31_DDR		DDRA
-#define DIO31_PWM		NULL
+#define DIO37_PIN		PINA0
+#define DIO37_RPORT	PINA
+#define DIO37_WPORT	PORTA
+#define DIO37_DDR		DDRA
+#define DIO37_PWM		NULL
 
 #define AIO0_PIN		PINA0
 #define AIO0_RPORT	PINA

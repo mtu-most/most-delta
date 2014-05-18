@@ -105,52 +105,52 @@ If a motor turns in the wrong direction change INVERT_X_DIR or INVERT_Y_DIR.
 /** Drive settings for the Delta printers
 */
 #if DRIVE_SYSTEM==3
-    // ***************************************************
-    // *** These parameter are only for Delta printers ***
-    // ***************************************************
+// ***************************************************
+// *** These parameter are only for Delta printers ***
+// ***************************************************
 
-    /** \brief Delta drive type: 0 - belts and pulleys, 1 - filament drive */
-    #define DELTA_DRIVE_TYPE 0
+/** \brief Delta drive type: 0 - belts and pulleys, 1 - filament drive */
+#define DELTA_DRIVE_TYPE 0
 
-    #if DELTA_DRIVE_TYPE == 0
-      /** \brief Pitch in mm of drive belt. GT2 = 2mm */
-      #define BELT_PITCH 5
-      /** \brief Number of teeth on X, Y and Z tower pulleys */
-      #define PULLEY_TEETH 12
-      #define PULLEY_CIRCUMFERENCE (BELT_PITCH * PULLEY_TEETH)
-    #elif DELTA_DRIVE_TYPE == 1
-      /** \brief Filament pulley diameter in milimeters */
-      #define PULLEY_DIAMETER 10
-      #define PULLEY_CIRCUMFERENCE (PULLEY_DIAMETER * 3.1415927)
-    #endif
+#if DELTA_DRIVE_TYPE == 0
+/** \brief Pitch in mm of drive belt. GT2 = 2mm */
+#define BELT_PITCH 5
+/** \brief Number of teeth on X, Y and Z tower pulleys */
+#define PULLEY_TEETH 12
+#define PULLEY_CIRCUMFERENCE (BELT_PITCH * PULLEY_TEETH)
+#elif DELTA_DRIVE_TYPE == 1
+/** \brief Filament pulley diameter in milimeters */
+#define PULLEY_DIAMETER 10
+#define PULLEY_CIRCUMFERENCE (PULLEY_DIAMETER * 3.1415927)
+#endif
 
-    /** \brief Steps per rotation of stepper motor */
-    #define STEPS_PER_ROTATION 200
+/** \brief Steps per rotation of stepper motor */
+#define STEPS_PER_ROTATION 200
 
-    /** \brief Micro stepping rate of X, Y and Y tower stepper drivers */
-    #define MICRO_STEPS 16
+/** \brief Micro stepping rate of X, Y and Y tower stepper drivers */
+#define MICRO_STEPS 16
 
-    // Calculations
-    #define AXIS_STEPS_PER_MM ((float)(MICRO_STEPS * STEPS_PER_ROTATION) / PULLEY_CIRCUMFERENCE)
-    #define XAXIS_STEPS_PER_MM AXIS_STEPS_PER_MM
-    #define YAXIS_STEPS_PER_MM AXIS_STEPS_PER_MM
-    #define ZAXIS_STEPS_PER_MM AXIS_STEPS_PER_MM
+// Calculations
+#define AXIS_STEPS_PER_MM ((float)(MICRO_STEPS * STEPS_PER_ROTATION) / PULLEY_CIRCUMFERENCE)
+#define XAXIS_STEPS_PER_MM AXIS_STEPS_PER_MM
+#define YAXIS_STEPS_PER_MM AXIS_STEPS_PER_MM
+#define ZAXIS_STEPS_PER_MM AXIS_STEPS_PER_MM
 #else
-    // *******************************************************
-    // *** These parameter are for all other printer types ***
-    // *******************************************************
+// *******************************************************
+// *** These parameter are for all other printer types ***
+// *******************************************************
 
-    /** Drive settings for printers with cartesian drive systems */
-    /** \brief Number of steps for a 1mm move in x direction.
-    For xy gantry use 2*belt moved!
-    Overridden if EEPROM activated. */
-    #define XAXIS_STEPS_PER_MM 98.425196
-    /** \brief Number of steps for a 1mm move in y direction.
-    For xy gantry use 2*belt moved!
-    Overridden if EEPROM activated.*/
-    #define YAXIS_STEPS_PER_MM 98.425196
-    /** \brief Number of steps for a 1mm move in z direction  Overridden if EEPROM activated.*/
-    #define ZAXIS_STEPS_PER_MM 2560
+/** Drive settings for printers with cartesian drive systems */
+/** \brief Number of steps for a 1mm move in x direction.
+For xy gantry use 2*belt moved!
+Overridden if EEPROM activated. */
+#define XAXIS_STEPS_PER_MM 98.425196
+/** \brief Number of steps for a 1mm move in y direction.
+For xy gantry use 2*belt moved!
+Overridden if EEPROM activated.*/
+#define YAXIS_STEPS_PER_MM 98.425196
+/** \brief Number of steps for a 1mm move in z direction  Overridden if EEPROM activated.*/
+#define ZAXIS_STEPS_PER_MM 2560
 #endif
 
 // ##########################################################################################
@@ -163,7 +163,7 @@ If a motor turns in the wrong direction change INVERT_X_DIR or INVERT_Y_DIR.
 #define EXT0_X_OFFSET 0
 #define EXT0_Y_OFFSET 0
 // for skeinforge 40 and later, steps to pull the plasic 1 mm inside the extruder, not out.  Overridden if EEPROM activated.
-#define EXT0_STEPS_PER_MM 92 // 4.62:1 gearbox with mk7 drive gear
+#define EXT0_STEPS_PER_MM 95
 // What type of sensor is used?
 // 1 is 100k thermistor (Epcos B57560G0107F000 - RepRap-Fab.org and many other)
 // 2 is 200k thermistor
@@ -273,9 +273,10 @@ The codes are only executed for multiple extruder when changing the extruder. */
 /** PWM speed for the cooler fan. 0=off 255=full speed */
 #define EXT0_EXTRUDER_COOLER_SPEED 255
 
+
 /** If enabled you can select the distance your filament gets retracted during a
 M140 command, after a given temperature is reached. */
-#define RETRACT_DURING_HEATUP false
+#define RETRACT_DURING_HEATUP true
 
 /** PID control only works target temperature +/- PID_CONTROL_RANGE.
 If you get much overshoot at the first temperature set, because the heater is going full power too long, you
@@ -567,8 +568,8 @@ on this endstop.
 
 // For higher precision you can reduce the speed for the second test on the endstop
 // during homing operation. The homing speed is divided by the value. 1 = same speed, 2 = half speed
-#define ENDSTOP_X_RETEST_REDUCTION_FACTOR 8
-#define ENDSTOP_Y_RETEST_REDUCTION_FACTOR 8
+#define ENDSTOP_X_RETEST_REDUCTION_FACTOR 3
+#define ENDSTOP_Y_RETEST_REDUCTION_FACTOR 3
 #define ENDSTOP_Z_RETEST_REDUCTION_FACTOR 3
 
 // When you have several endstops in one circuit you need to disable it after homing by moving a
@@ -588,7 +589,7 @@ on this endstop.
 // If EEPROM is enabled these values will be overidden with the values in the EEPROM
 #define X_MAX_LENGTH 200
 #define Y_MAX_LENGTH 200
-#define Z_MAX_LENGTH 230.8
+#define Z_MAX_LENGTH 231.2
 
 // Coordinates for the minimum axis. Can also be negative if you want to have the bed start at 0 and the printer can go to the left side
 // of the bed. Maximum coordinate is given by adding the above X_MAX_LENGTH values.
@@ -619,7 +620,7 @@ on this endstop.
 #if DRIVE_SYSTEM==3
 /** \brief Delta rod length
 */
-#define DELTA_DIAGONAL_ROD 250 // mm
+#define DELTA_DIAGONAL_ROD 251.0 // mm if too short, the nozzle lifts from bed as it approaches radius (concave print)
 
 
 /*  =========== Parameter essential for delta calibration ===================
@@ -689,7 +690,7 @@ you can also change the values online and autoleveling will store the results he
 Increasing this figure can use a lot of memory since 7 bytes * size of line buffer * MAX_SELTA_SEGMENTS_PER_LINE
 will be allocated for the delta buffer. With defaults 7 * 16 * 22 = 2464 bytes. This leaves ~1K free RAM on an Arduino
 Mega. Used only for nonlinear systems like delta or tuga. */
-#define MAX_DELTA_SEGMENTS_PER_LINE 24
+#define MAX_DELTA_SEGMENTS_PER_LINE 22
 
 /** After x seconds of inactivity, the stepper motors are disabled.
     Set to 0 to leave them enabled.
@@ -1009,11 +1010,16 @@ is always running and is not hung up for some unknown reason. */
 #define Z_PROBE_X3 0
 #define Z_PROBE_Y3 80
 
+/* Define a pin to tuen light on/off */
+#define CASE_LIGHTS_PIN -1
+
 /** Set to false to disable SD support: */
 #ifndef SDSUPPORT  // Some boards have sd support on board. These define the values already in pins.h
-#define SDSUPPORT false
-/** If set to false all files with longer names then 8.3 or having a tilde in the name will be hidden */
-#define SD_ALLOW_LONG_NAMES false
+#define SDSUPPORT true
+/** Will show long filenames as entered. You can not create long filenames view g-code. Do not delete files
+with long filenames!
+ */
+#define SD_ALLOW_LONG_NAMES true
 // Uncomment to enable or change card detection pin. With card detection the card is mounted on insertion.
 #define SDCARDDETECT -1
 // Change to true if you get a inserted message on removal.
@@ -1034,7 +1040,7 @@ is always running and is not hung up for some unknown reason. */
 /** Should support for fan control be compiled in. If you enable this make sure
 the FAN pin is not the same as for your second extruder. RAMPS e.g. has FAN_PIN in 9 which
 is also used for the heater if you have 2 extruders connected. */
-#define FEATURE_FAN_CONTROL true
+#define FEATURE_FAN_CONTROL false
 
 /** For displays and keys there are too many permutations to handle them all in once.
 For the most common available combinations you can set the controller type here, so
@@ -1056,7 +1062,7 @@ The following settings override uiconfig.h!
 10 = Gadgets3D shield on RAMPS 1.4, see http://reprap.org/wiki/RAMPS_1.3/1.4_GADGETS3D_Shield_with_Panel
 11 = RepRapDiscount Full Graphic Smart Controller
 */
-#define FEATURE_CONTROLLER 0
+#define FEATURE_CONTROLLER 3
 
 /**
 Select the language to use.
@@ -1068,14 +1074,21 @@ Select the language to use.
 5 = Spanish
 6 = Swedish
 */
-#define UI_LANGUAGE 1
+#define UI_LANGUAGE 0
 
 // This is line 2 of the status display at startup. Change to your like.
-#define UI_VERSION_STRING2 "Delta Tower"
+#define UI_PRINTER_NAME "BAMFP"
+#define UI_PRINTER_COMPANY "GCA"
+
+
+/** Animate switches between menus etc. */
+#define UI_ANIMATION false
 
 /** How many ms should a single page be shown, until it is switched to the next one.*/
 #define UI_PAGES_DURATION 4000
 
+/** Delay of start screen in milliseconds */
+#define UI_START_SCREEN_DELAY 1000
 /** Uncomment if you don't want automatic page switching. You can still switch the
 info pages with next/previous button/click-encoder */
 #define UI_DISABLE_AUTO_PAGESWITCH true
@@ -1137,4 +1150,6 @@ Values must be in range 1..255
 #define UI_SET_EXTRUDER_RETRACT_DISTANCE 3 // mm
 
 #endif
+
+//#define GLENN_DEBUG
 

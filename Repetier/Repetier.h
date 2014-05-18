@@ -246,7 +246,9 @@ usage or for seraching for memory induced errors. Switch it off for production, 
 
 #include "HAL.h"
 #include "gcode.h"
-
+#define MAX_VFAT_ENTRIES (2)
+/** Total size of the buffer used to store the long filenames */
+#define LONG_FILENAME_LENGTH (13*MAX_VFAT_ENTRIES+1)
 #define SD_MAX_FOLDER_DEPTH 2
 
 #include "ui.h"
@@ -380,8 +382,9 @@ extern void write_monitor();
 
 
 #if SDSUPPORT
-
-
+extern char tempLongFilename[LONG_FILENAME_LENGTH+1];
+extern char fullName[LONG_FILENAME_LENGTH*SD_MAX_FOLDER_DEPTH+SD_MAX_FOLDER_DEPTH+1];
+#define SHORT_FILENAME_LENGTH 14
 #include "SdFat.h"
 
 enum LsAction {LS_SerialPrint,LS_Count,LS_GetFilename};
@@ -395,28 +398,25 @@ public:
   SdFile file;
   uint32_t filesize;
   uint32_t sdpos;
-  char fullName[13*SD_MAX_FOLDER_DEPTH+13]; // Fill name
+  //char fullName[13*SD_MAX_FOLDER_DEPTH+13]; // Fill name
   char *shortname; // Pointer to start of filename itself
   char *pathend; // File to char where pathname in fullname ends
   bool sdmode;  // true if we are printing from sd card
   bool sdactive;
   //int16_t n;
   bool savetosd;
+  SdBaseFile parentFound;
+
   SDCard();
   void initsd();
   void writeCommand(GCode *code);
   bool selectFile(char *filename,bool silent=false);
-  inline void mount() {
-    sdmode = false;
-    initsd();
-  }
-  inline void unmount() {
-    sdmode = false;
-    sdactive = false;
-    Printer::setMenuMode(MENU_MODE_SD_MOUNTED+MENU_MODE_SD_PAUSED+MENU_MODE_SD_PRINTING,false);
-  }
-  inline void startPrint() {if(sdactive) sdmode = true;Printer::setMenuMode(MENU_MODE_SD_PRINTING,true); Printer::setMenuMode(MENU_MODE_SD_PAUSED,false);}
-  inline void pausePrint() {sdmode = false;Printer::setMenuMode(MENU_MODE_SD_PAUSED,true);}
+  void mount();
+  void unmount();
+  void startPrint();
+  void pausePrint(bool intern = false);
+  void continuePrint(bool intern=false);
+  void stopPrint();
   inline void setIndex(uint32_t  newpos) { if(!sdactive) return; sdpos = newpos;file.seekSet(sdpos);}
   void printStatus();
   void ls();
@@ -427,8 +427,11 @@ public:
   void makeDirectory(char *filename);
   bool showFilename(const uint8_t *name);
   void automount();
+#ifdef GLENN_DEBUG
+  void writeToFile();
+#endif
 private:
-  void lsRecursive(SdBaseFile *parent,uint8_t level);
+  uint8_t lsRecursive(SdBaseFile *parent,uint8_t level,char *findFilename);
  // SdFile *getDirectory(char* name);
 };
 

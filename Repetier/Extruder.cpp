@@ -139,7 +139,7 @@ void Extruder::manageTemperatures()
                 output = 0; // off is off, even if damping term wants a heat peak!
             else if(error>PID_CONTROL_RANGE)
                 output = act->pidMax;
-            else if(error<-PID_CONTROL_RANGE)
+            else if(error < -PID_CONTROL_RANGE)
                 output = 0;
             else
             {
@@ -373,7 +373,8 @@ void Extruder::selectExtruderById(uint8_t extruderId)
     float oldfeedrate = Printer::feedrate;
     Printer::offsetX = -Extruder::current->xOffset*Printer::invAxisStepsPerMM[X_AXIS];
     Printer::offsetY = -Extruder::current->yOffset*Printer::invAxisStepsPerMM[Y_AXIS];
-    Printer::moveToReal(cx,cy,cz,IGNORE_COORDINATE,Printer::homingFeedrate[X_AXIS]);
+    if(Printer::isHomed())
+        Printer::moveToReal(cx,cy,cz,IGNORE_COORDINATE,Printer::homingFeedrate[X_AXIS]);
     Printer::feedrate = oldfeedrate;
     Printer::updateCurrentPosition();
 #if NUM_EXTRUDER>1
@@ -1058,7 +1059,7 @@ int16_t read_max6675(uint8_t ss_pin)
     HAL::delayMicroseconds(1);    // ensure 100ns delay - a bit extra is fine
     max6675_temp = HAL::spiReceive(0);
     max6675_temp <<= 8;
-    HAL::max6675_temp |= HAL::spiReceive(0);
+    max6675_temp |= HAL::spiReceive(0);
     HAL::digitalWrite(ss_pin, 1);  // disable TT_MAX6675
     return max6675_temp & 4 ? 2000 : max6675_temp >> 3; // thermocouple open?
 }

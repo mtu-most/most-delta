@@ -747,7 +747,10 @@ void Commands::executeGCode(GCode *com)
             break;
         case 23: //M23 - Select file
             if(com->hasString())
+            {
+                sd.fat.chdir();
                 sd.selectFile(com->text);
+            }
             break;
         case 24: //M24 - Start SD print
             sd.startPrint();
@@ -772,11 +775,17 @@ void Commands::executeGCode(GCode *com)
             break;
         case 30: // M30 filename - Delete file
             if(com->hasString())
+            {
+                sd.fat.chdir();
                 sd.deleteFile(com->text);
+            }
             break;
         case 32: // M32 directoryname
             if(com->hasString())
+            {
+                sd.fat.chdir();
                 sd.makeDirectory(com->text);
+            }
             break;
 #endif
         case 42: //M42 -Change pin status via gcode
@@ -1180,19 +1189,11 @@ void Commands::executeGCode(GCode *com)
             break;
 #if FEATURE_MEMORY_POSITION
         case 401: // Memory position
-            Printer::memoryX = Printer::currentPositionSteps[0];
-            Printer::memoryY = Printer::currentPositionSteps[1];
-            Printer::memoryZ = Printer::currentPositionSteps[2];
+            Printer::MemoryPosition();
             break;
         case 402: // Go to stored position
-        {
-            bool all = !(com->hasX() && com->hasY() && com->hasZ());
-            PrintLine::moveRelativeDistanceInSteps((all || com->hasX() ? Printer::memoryX-Printer::currentPositionSteps[0] : 0)
-                                                   ,(all || com->hasY() ? Printer::memoryY-Printer::currentPositionSteps[1] : 0)
-                                                   ,(all || com->hasZ() ? Printer::memoryZ-Printer::currentPositionSteps[2] : 0)
-                                                   ,0,(com->hasF() ? com->F : Printer::feedrate),false,ALWAYS_CHECK_ENDSTOPS);
-        }
-        break;
+            Printer::GoToMemoryPosition(com->hasX(),com->hasY(),com->hasZ(),com->hasE(),(com->hasF() ? com->F : Printer::feedrate));
+            break;
 #endif
         case 908: // Control digital trimpot directly.
         {
