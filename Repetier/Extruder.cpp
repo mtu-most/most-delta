@@ -12,7 +12,7 @@
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+    along with Repetier-Firmware.  If not, see <http://www.gnu.org/licenses/>.
 
     This firmware is a nearly complete rewrite of the sprinter firmware
     by kliment (https://github.com/kliment/Sprinter)
@@ -27,10 +27,10 @@
 #endif
 
 
-uint8_t manage_monitor = 255; ///< Temp. we want to monitor with our host. 1+NUM_EXTRUDER is heated bed
-unsigned int counter_periodical=0;
-volatile uint8_t execute_periodical=0;
-uint8_t counter_250ms=25;
+uint8_t manageMonitor = 255; ///< Temp. we want to monitor with our host. 1+NUM_EXTRUDER is heated bed
+unsigned int counterPeriodical = 0;
+volatile uint8_t executePeriodical = 0;
+uint8_t counter250ms=25;
 #if FEATURE_DITTO_PRINTING
 uint8_t Extruder::dittoMode = 0;
 #endif
@@ -93,18 +93,22 @@ void Extruder::manageTemperatures()
                 else
                     extruder[controller].coolerPWM = extruder[controller].coolerSpeed;
         }
-        if(!(Printer::flag0 & PRINTER_FLAG0_TEMPSENSOR_DEFECT) && (act->currentTemperatureC<MIN_DEFECT_TEMPERATURE || act->currentTemperatureC>MAX_DEFECT_TEMPERATURE))   // no temp sensor or short in sensor, disable heater
+        if(!Printer::isAnyTempsensorDefect() && (act->currentTemperatureC < MIN_DEFECT_TEMPERATURE || act->currentTemperatureC > MAX_DEFECT_TEMPERATURE))   // no temp sensor or short in sensor, disable heater
         {
             extruderTempErrors++;
             errorDetected = 1;
-            if(extruderTempErrors>10)   // Ignore short temporary failures
+            if(extruderTempErrors > 10)   // Ignore short temporary failures
             {
                 Printer::flag0 |= PRINTER_FLAG0_TEMPSENSOR_DEFECT;
                 reportTempsensorError();
             }
         }
-        if(Printer::flag0 & PRINTER_FLAG0_TEMPSENSOR_DEFECT) continue;
+        if(Printer::isAnyTempsensorDefect()) continue;
         uint8_t on = act->currentTemperature>=act->targetTemperature ? LOW : HIGH;
+        if(!on && act->isAlarm()) {
+            beep(50*(controller+1),3);
+            act->setAlarm(false);  //reset alarm
+        }
 #ifdef TEMP_PID
         act->tempArray[act->tempPointer++] = act->currentTemperatureC;
         act->tempPointer &= 3;
@@ -122,7 +126,7 @@ void Extruder::manageTemperatures()
                 float pidTerm = act->pidPGain * error;
                 act->tempIState = constrain(act->tempIState+error,act->tempIStateLimitMin,act->tempIStateLimitMax);
                 pidTerm += act->pidIGain * act->tempIState*0.1;
-                long dgain = act->pidDGain * (act->tempArray[act->tempPointer]-act->currentTemperatureC)*3.333f;
+                float dgain = act->pidDGain * (act->tempArray[act->tempPointer]-act->currentTemperatureC)*3.333f;
                 pidTerm += dgain;
 #if SCALE_PID_TO_MAX==1
                 pidTerm = (pidTerm*act->pidMax)*0.0039062;
@@ -153,7 +157,7 @@ void Extruder::manageTemperatures()
 #endif
             if(act->heatManager == 2)    // Bang-bang with reduced change frequency to save relais life
             {
-                unsigned long time = HAL::timeInMilliseconds();
+                uint32_t time = HAL::timeInMilliseconds();
                 if (time - act->lastTemperatureUpdate > HEATED_BED_SET_INTERVAL)
                 {
                     pwm_pos[act->pwmIndex] = (on ? 255 : 0);
@@ -175,7 +179,7 @@ void Extruder::manageTemperatures()
     }
     if(errorDetected == 0 && extruderTempErrors>0)
         extruderTempErrors--;
-    if(Printer::flag0 & PRINTER_FLAG0_TEMPSENSOR_DEFECT)
+    if(Printer::isAnyTempsensorDefect())
     {
         for(uint8_t i=0; i<NUM_TEMPERATURE_LOOPS; i++)
         {
@@ -305,6 +309,7 @@ void Extruder::initExtruder()
     }
 #if HEATED_BED_HEATER_PIN>-1
     SET_OUTPUT(HEATED_BED_HEATER_PIN);
+    WRITE(HEATED_BED_HEATER_PIN,HEATER_PINS_INVERTED);
     Extruder::initHeatedBed();
 #endif
     HAL::analogStart();
@@ -383,27 +388,29 @@ void Extruder::selectExtruderById(uint8_t extruderId)
 #endif
 }
 
-void Extruder::setTemperatureForExtruder(float temp_celsius,uint8_t extr)
+void Extruder::setTemperatureForExtruder(float temperatureInCelsius,uint8_t extr,bool beep)
 {
     bool alloffs = true;
     for(uint8_t i=0; i<NUM_EXTRUDER; i++)
         if(tempController[i]->targetTemperatureC>15) alloffs = false;
 #ifdef MAXTEMP
-    if(temp_celsius>MAXTEMP) temp_celsius = MAXTEMP;
+    if(temperatureInCelsius>MAXTEMP) temperatureInCelsius = MAXTEMP;
 #endif
-    if(temp_celsius<0) temp_celsius=0;
+    if(temperatureInCelsius<0) temperatureInCelsius=0;
     TemperatureController *tc = tempController[extr];
-    //if(temp_celsius==tc->targetTemperatureC) return;
-    tc->setTargetTemperature(temp_celsius);
-    if(temp_celsius>=EXTRUDER_FAN_COOL_TEMP) extruder[extr].coolerPWM = extruder[extr].coolerSpeed;
+    //if(temperatureInCelsius==tc->targetTemperatureC) return;
+    tc->setTargetTemperature(temperatureInCelsius);
+    if(beep && temperatureInCelsius>30)
+        tc->setAlarm(true);
+    if(temperatureInCelsius>=EXTRUDER_FAN_COOL_TEMP) extruder[extr].coolerPWM = extruder[extr].coolerSpeed;
     Com::printF(Com::tTargetExtr,extr,0);
-    Com::printFLN(Com::tColon,temp_celsius,0);
+    Com::printFLN(Com::tColon,temperatureInCelsius,0);
 #if FEATURE_DITTO_PRINTING
     if(Extruder::dittoMode && extr == 0)
     {
         TemperatureController *tc2 = tempController[1];
-        tc2->setTargetTemperature(temp_celsius);
-        if(temp_celsius>=EXTRUDER_FAN_COOL_TEMP) extruder[1].coolerPWM = extruder[1].coolerSpeed;
+        tc2->setTargetTemperature(temperatureInCelsius);
+        if(temperatureInCelsius>=EXTRUDER_FAN_COOL_TEMP) extruder[1].coolerPWM = extruder[1].coolerSpeed;
     }
 #endif // FEATURE_DITTO_PRINTING
     bool alloff = true;
@@ -417,13 +424,14 @@ void Extruder::setTemperatureForExtruder(float temp_celsius,uint8_t extr)
         Printer::msecondsPrinting = HAL::timeInMilliseconds();
 }
 
-void Extruder::setHeatedBedTemperature(float temp_celsius)
+void Extruder::setHeatedBedTemperature(float temperatureInCelsius,bool beep)
 {
 #if HAVE_HEATED_BED
-    if(temp_celsius>HEATED_BED_MAX_TEMP) temp_celsius = HEATED_BED_MAX_TEMP;
-    if(temp_celsius<0) temp_celsius = 0;
-    if(heatedBedController.targetTemperatureC==temp_celsius) return; // don't flood log with messages if killed
-    heatedBedController.setTargetTemperature(temp_celsius);
+    if(temperatureInCelsius>HEATED_BED_MAX_TEMP) temperatureInCelsius = HEATED_BED_MAX_TEMP;
+    if(temperatureInCelsius<0) temperatureInCelsius = 0;
+    if(heatedBedController.targetTemperatureC==temperatureInCelsius) return; // don't flood log with messages if killed
+    heatedBedController.setTargetTemperature(temperatureInCelsius);
+    if(beep && temperatureInCelsius>30) heatedBedController.setAlarm(true);
     Com::printFLN(Com::tTargetBedColon,heatedBedController.targetTemperatureC,0);
 #endif
 }
@@ -449,6 +457,12 @@ void Extruder::disableCurrentExtruderMotor()
             digitalWrite(extruder[1].enablePin,!extruder[1].enableOn);
     }
 #endif
+}
+void Extruder::disableAllExtruderMotors() {
+    for(byte i=0;i<NUM_EXTRUDER;i++) {
+        if(extruder[i].enablePin > -1)
+            digitalWrite(extruder[i].enablePin,!extruder[i].enableOn);
+    }
 }
 #define NUMTEMPS_1 28
 // Epcos B57560G0107F000
@@ -599,6 +613,7 @@ void TemperatureController::updateCurrentTemperature()
 #ifdef SUPPORT_MAX31855
     case 102: // MAX31855
         currentTemperature = read_max31855(sensorPin);
+        break;
 #endif
     default:
         currentTemperature = 4095; // unknown method, return high value to switch heater off for safety
@@ -675,6 +690,7 @@ void TemperatureController::updateCurrentTemperature()
     }
     case 60: // AD8495 (Delivers 5mV/degC vs the AD595's 10mV)
         currentTemperatureC = ((float)currentTemperature * 1000.0f/(1024<<(2-ANALOG_REDUCE_BITS)));
+        break;
     case 100: // AD595
         //return (int)((long)raw_temp * 500/(1024<<(2-ANALOG_REDUCE_BITS)));
         currentTemperatureC = ((float)currentTemperature * 500.0f/(1024<<(2-ANALOG_REDUCE_BITS)));
@@ -767,7 +783,7 @@ void TemperatureController::setTargetTemperature(float target)
             newtemp = pgm_read_word(&temptable[i++]);
             if (newtemp < temp)
             {
-                targetTemperature = (1023<<(2-ANALOG_REDUCE_BITS))- oldraw + (long)(oldtemp-temp)*(long)(oldraw-newraw)/(oldtemp-newtemp);
+                targetTemperature = (1023<<(2-ANALOG_REDUCE_BITS))- oldraw + (int32_t)(oldtemp-temp)*(int32_t)(oldraw-newraw)/(oldtemp-newtemp);
                 return;
             }
             oldtemp = newtemp;
@@ -794,7 +810,7 @@ void TemperatureController::setTargetTemperature(float target)
             newtemp = pgm_read_word(&temptable[i++]);
             if (newtemp > temp)
             {
-                targetTemperature = oldraw + (long)(oldtemp-temp)*(long)(oldraw-newraw)/(oldtemp-newtemp);
+                targetTemperature = oldraw + (int32_t)(oldtemp-temp)*(int32_t)(oldraw-newraw)/(oldtemp-newtemp);
                 return;
             }
             oldtemp = newtemp;
@@ -805,10 +821,10 @@ void TemperatureController::setTargetTemperature(float target)
         break;
     }
     case 60: // HEATER_USES_AD8495 (Delivers 5mV/degC)
-        targetTemperature = (int)((long)temp * (1024<<(2-ANALOG_REDUCE_BITS))/ 1000);
+        targetTemperature = (int)((int32_t)temp * (1024<<(2-ANALOG_REDUCE_BITS))/ 1000);
         break;
     case 100: // HEATER_USES_AD595
-        targetTemperature = (int)((long)temp * (1024<<(2-ANALOG_REDUCE_BITS))/ 500);
+        targetTemperature = (int)((int32_t)temp * (1024<<(2-ANALOG_REDUCE_BITS))/ 500);
         break;
 #ifdef SUPPORT_MAX6675
     case 101:  // defined HEATER_USES_MAX6675
@@ -848,7 +864,7 @@ void TemperatureController::setTargetTemperature(float target)
             newtemp = temptable[i++];
             if (newtemp < temp)
             {
-                targetTemperature = (1023<<(2-ANALOG_REDUCE_BITS))- oldraw + (long)(oldtemp-temp)*(long)(oldraw-newraw)/(oldtemp-newtemp);
+                targetTemperature = (1023<<(2-ANALOG_REDUCE_BITS))- oldraw + (int32_t)(oldtemp-temp)*(int32_t)(oldraw-newraw)/(oldtemp-newtemp);
                 return;
             }
             oldtemp = newtemp;
@@ -882,14 +898,14 @@ void TemperatureController::autotunePID(float temp,uint8_t controllerId,bool sto
     int cycles=0;
     bool heating = true;
 
-    unsigned long temp_millis = HAL::timeInMilliseconds();
-    unsigned long t1=temp_millis;
-    unsigned long t2=temp_millis;
-    long t_high;
-    long t_low;
+    uint32_t temp_millis = HAL::timeInMilliseconds();
+    uint32_t t1=temp_millis;
+    uint32_t t2=temp_millis;
+    int32_t t_high;
+    int32_t t_low;
 
-    long bias=pidMax>>1;
-    long d = pidMax>>1;
+    int32_t bias=pidMax>>1;
+    int32_t d = pidMax>>1;
     float Ku, Tu;
     float Kp, Ki, Kd;
     float maxTemp=20, minTemp=20;
@@ -1023,10 +1039,10 @@ void TemperatureController::autotunePID(float temp,uint8_t controllerId,bool sto
 This function is called every 250ms to write the monitored temperature. If monitoring is
 disabled, the function is not called.
 */
-void write_monitor()
+void writeMonitor()
 {
     Com::printF(Com::tMTEMPColon,(long)HAL::timeInMilliseconds());
-    TemperatureController *act = tempController[manage_monitor];
+    TemperatureController *act = tempController[manageMonitor];
     Com::printF(Com::tSpace,act->currentTemperatureC);
     Com::printF(Com::tSpace,act->targetTemperatureC,0);
     Com::printFLN(Com::tSpace,pwm_pos[act->pwmIndex]);
@@ -1143,7 +1159,7 @@ Extruder extruder[NUM_EXTRUDER] =
 #ifdef TEMP_PID
             ,0,EXT0_PID_INTEGRAL_DRIVE_MAX,EXT0_PID_INTEGRAL_DRIVE_MIN,EXT0_PID_P,EXT0_PID_I,EXT0_PID_D,EXT0_PID_MAX,0,0,0,{0,0,0,0}
 #endif
-        }
+        ,0}
         ,ext0_select_cmd,ext0_deselect_cmd,EXT0_EXTRUDER_COOLER_SPEED,0
     }
 #endif
@@ -1163,7 +1179,7 @@ Extruder extruder[NUM_EXTRUDER] =
 #ifdef TEMP_PID
             ,0,EXT1_PID_INTEGRAL_DRIVE_MAX,EXT1_PID_INTEGRAL_DRIVE_MIN,EXT1_PID_P,EXT1_PID_I,EXT1_PID_D,EXT1_PID_MAX,0,0,0,{0,0,0,0}
 #endif
-        }
+        ,0}
         ,ext1_select_cmd,ext1_deselect_cmd,EXT1_EXTRUDER_COOLER_SPEED,0
     }
 #endif
@@ -1183,7 +1199,7 @@ Extruder extruder[NUM_EXTRUDER] =
 #ifdef TEMP_PID
             ,0,EXT2_PID_INTEGRAL_DRIVE_MAX,EXT2_PID_INTEGRAL_DRIVE_MIN,EXT2_PID_P,EXT2_PID_I,EXT2_PID_D,EXT2_PID_MAX,0,0,0,{0,0,0,0}
 #endif
-        }
+        ,0}
         ,ext2_select_cmd,ext2_deselect_cmd,EXT2_EXTRUDER_COOLER_SPEED,0
     }
 #endif
@@ -1203,7 +1219,7 @@ Extruder extruder[NUM_EXTRUDER] =
 #ifdef TEMP_PID
             ,0,EXT3_PID_INTEGRAL_DRIVE_MAX,EXT3_PID_INTEGRAL_DRIVE_MIN,EXT3_PID_P,EXT3_PID_I,EXT3_PID_D,EXT3_PID_MAX,0,0,0,{0,0,0,0}
 #endif
-        }
+        ,0}
         ,ext3_select_cmd,ext3_deselect_cmd,EXT3_EXTRUDER_COOLER_SPEED,0
     }
 #endif
@@ -1223,7 +1239,7 @@ Extruder extruder[NUM_EXTRUDER] =
 #ifdef TEMP_PID
             ,0,EXT4_PID_INTEGRAL_DRIVE_MAX,EXT4_PID_INTEGRAL_DRIVE_MIN,EXT4_PID_P,EXT4_PID_I,EXT4_PID_D,EXT4_PID_MAX,0,0,0,{0,0,0,0}
 #endif
-        }
+        ,0}
         ,ext4_select_cmd,ext4_deselect_cmd,EXT4_EXTRUDER_COOLER_SPEED,0
     }
 #endif
@@ -1243,7 +1259,7 @@ Extruder extruder[NUM_EXTRUDER] =
 #ifdef TEMP_PID
             ,0,EXT5_PID_INTEGRAL_DRIVE_MAX,EXT5_PID_INTEGRAL_DRIVE_MIN,EXT5_PID_P,EXT5_PID_I,EXT5_PID_D,EXT5_PID_MAX,0,0,0,{0,0,0,0}
 #endif
-        }
+        ,0}
         ,ext5_select_cmd,ext5_deselect_cmd,EXT5_EXTRUDER_COOLER_SPEED,0
     }
 #endif
@@ -1255,7 +1271,7 @@ TemperatureController heatedBedController = {NUM_EXTRUDER,HEATED_BED_SENSOR_TYPE
 #ifdef TEMP_PID
         ,0,HEATED_BED_PID_INTEGRAL_DRIVE_MAX,HEATED_BED_PID_INTEGRAL_DRIVE_MIN,HEATED_BED_PID_PGAIN,HEATED_BED_PID_IGAIN,HEATED_BED_PID_DGAIN,HEATED_BED_PID_MAX,0,0,0,{0,0,0,0}
 #endif
-                                            };
+                                            ,0};
 #else
 #define NUM_TEMPERATURE_LOOPS NUM_EXTRUDER
 #endif

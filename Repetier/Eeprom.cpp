@@ -36,14 +36,14 @@ void EEPROM::update(GCode *com)
             if(com->hasS()) HAL::eprSetInt16(com->P,(int)com->S);
             break;
         case 2:
-            if(com->hasS()) HAL::eprSetInt32(com->P,(long)com->S);
+            if(com->hasS()) HAL::eprSetInt32(com->P,(int32_t)com->S);
             break;
         case 3:
             if(com->hasX()) HAL::eprSetFloat(com->P,com->X);
             break;
         }
     uint8_t newcheck = computeChecksum();
-    if(newcheck!=HAL::eprGetByte(EPR_INTEGRITY_BYTE))
+    if(newcheck != HAL::eprGetByte(EPR_INTEGRITY_BYTE))
         HAL::eprSetByte(EPR_INTEGRITY_BYTE,newcheck);
     readDataFromEEPROM();
     Extruder::selectExtruderById(Extruder::current->id);
@@ -59,27 +59,27 @@ void EEPROM::restoreEEPROMSettingsFromConfiguration()
     baudrate = BAUDRATE;
     maxInactiveTime = MAX_INACTIVE_TIME*1000L;
     stepperInactiveTime = STEPPER_INACTIVE_TIME*1000L;
-    Printer::axisStepsPerMM[0] = XAXIS_STEPS_PER_MM;
-    Printer::axisStepsPerMM[1] = YAXIS_STEPS_PER_MM;
-    Printer::axisStepsPerMM[2] = ZAXIS_STEPS_PER_MM;
-    Printer::axisStepsPerMM[3] = 1;
-    Printer::maxFeedrate[0] = MAX_FEEDRATE_X;
-    Printer::maxFeedrate[1] = MAX_FEEDRATE_Y;
-    Printer::maxFeedrate[2] = MAX_FEEDRATE_Z;
-    Printer::homingFeedrate[0] = HOMING_FEEDRATE_X;
-    Printer::homingFeedrate[1] = HOMING_FEEDRATE_Y;
-    Printer::homingFeedrate[2] = HOMING_FEEDRATE_Z;
+    Printer::axisStepsPerMM[X_AXIS] = XAXIS_STEPS_PER_MM;
+    Printer::axisStepsPerMM[Y_AXIS] = YAXIS_STEPS_PER_MM;
+    Printer::axisStepsPerMM[Z_AXIS] = ZAXIS_STEPS_PER_MM;
+    Printer::axisStepsPerMM[E_AXIS] = 1;
+    Printer::maxFeedrate[X_AXIS] = MAX_FEEDRATE_X;
+    Printer::maxFeedrate[Y_AXIS] = MAX_FEEDRATE_Y;
+    Printer::maxFeedrate[Z_AXIS] = MAX_FEEDRATE_Z;
+    Printer::homingFeedrate[X_AXIS] = HOMING_FEEDRATE_X;
+    Printer::homingFeedrate[Y_AXIS] = HOMING_FEEDRATE_Y;
+    Printer::homingFeedrate[Z_AXIS] = HOMING_FEEDRATE_Z;
     Printer::maxJerk = MAX_JERK;
 #if DRIVE_SYSTEM!=3
     Printer::maxZJerk = MAX_ZJERK;
 #endif
 #ifdef RAMP_ACCELERATION
-    Printer::maxAccelerationMMPerSquareSecond[0] = MAX_ACCELERATION_UNITS_PER_SQ_SECOND_X;
-    Printer::maxAccelerationMMPerSquareSecond[1] = MAX_ACCELERATION_UNITS_PER_SQ_SECOND_Y;
-    Printer::maxAccelerationMMPerSquareSecond[2] = MAX_ACCELERATION_UNITS_PER_SQ_SECOND_Z;
-    Printer::maxTravelAccelerationMMPerSquareSecond[0] = MAX_TRAVEL_ACCELERATION_UNITS_PER_SQ_SECOND_X;
-    Printer::maxTravelAccelerationMMPerSquareSecond[1] = MAX_TRAVEL_ACCELERATION_UNITS_PER_SQ_SECOND_Y;
-    Printer::maxTravelAccelerationMMPerSquareSecond[2] = MAX_TRAVEL_ACCELERATION_UNITS_PER_SQ_SECOND_Z;
+    Printer::maxAccelerationMMPerSquareSecond[X_AXIS] = MAX_ACCELERATION_UNITS_PER_SQ_SECOND_X;
+    Printer::maxAccelerationMMPerSquareSecond[Y_AXIS] = MAX_ACCELERATION_UNITS_PER_SQ_SECOND_Y;
+    Printer::maxAccelerationMMPerSquareSecond[Z_AXIS] = MAX_ACCELERATION_UNITS_PER_SQ_SECOND_Z;
+    Printer::maxTravelAccelerationMMPerSquareSecond[X_AXIS] = MAX_TRAVEL_ACCELERATION_UNITS_PER_SQ_SECOND_X;
+    Printer::maxTravelAccelerationMMPerSquareSecond[Y_AXIS] = MAX_TRAVEL_ACCELERATION_UNITS_PER_SQ_SECOND_Y;
+    Printer::maxTravelAccelerationMMPerSquareSecond[Z_AXIS] = MAX_TRAVEL_ACCELERATION_UNITS_PER_SQ_SECOND_Z;
 #endif
 #if HAVE_HEATED_BED
     heatedBedController.heatManager= HEATED_BED_HEAT_MANAGER;
@@ -365,7 +365,7 @@ void EEPROM::storeDataIntoEEPROM(uint8_t corrupted)
 #if FEATURE_AUTOLEVEL
     HAL::eprSetByte(EPR_AUTOLEVEL_ACTIVE,Printer::isAutolevelActive());
     for(uint8_t i=0; i<9; i++)
-        HAL::eprSetFloat(EPR_AUTOLEVEL_MATRIX+((int)i)<<2,Printer::autolevelTransformation[i]);
+        HAL::eprSetFloat(EPR_AUTOLEVEL_MATRIX + (((int)i) << 2),Printer::autolevelTransformation[i]);
 #endif
     // now the extruder
     for(uint8_t i=0; i<NUM_EXTRUDER; i++)
@@ -436,6 +436,7 @@ void EEPROM::initalizeUncached()
     HAL::eprSetFloat(EPR_Z_PROBE_Y2,Z_PROBE_Y2);
     HAL::eprSetFloat(EPR_Z_PROBE_X3,Z_PROBE_X3);
     HAL::eprSetFloat(EPR_Z_PROBE_Y3,Z_PROBE_Y3);
+    HAL::eprSetFloat(EPR_Z_PROBE_BED_DISTANCE,Z_PROBE_BED_DISTANCE);
 #if DRIVE_SYSTEM==3
     HAL::eprSetFloat(EPR_DELTA_DIAGONAL_ROD_LENGTH,DELTA_DIAGONAL_ROD);
     HAL::eprSetFloat(EPR_DELTA_HORIZONTAL_RADIUS,DELTA_RADIUS);
@@ -450,6 +451,10 @@ void EEPROM::initalizeUncached()
     HAL::eprSetFloat(EPR_DELTA_RADIUS_CORR_A,DELTA_RADIUS_CORRECTION_A);
     HAL::eprSetFloat(EPR_DELTA_RADIUS_CORR_B,DELTA_RADIUS_CORRECTION_B);
     HAL::eprSetFloat(EPR_DELTA_RADIUS_CORR_C,DELTA_RADIUS_CORRECTION_C);
+    HAL::eprSetFloat(EPR_DELTA_MAX_RADIUS,DELTA_MAX_RADIUS);
+    HAL::eprSetFloat(EPR_DELTA_DIAGONAL_CORR_A,DELTA_DIAGONAL_CORRECTION_A);
+    HAL::eprSetFloat(EPR_DELTA_DIAGONAL_CORR_B,DELTA_DIAGONAL_CORRECTION_B);
+    HAL::eprSetFloat(EPR_DELTA_DIAGONAL_CORR_C,DELTA_DIAGONAL_CORRECTION_C);
 #endif
 }
 
@@ -508,9 +513,13 @@ void EEPROM::readDataFromEEPROM()
     if(version>2)
     {
         for(uint8_t i=0; i<9; i++)
-            Printer::autolevelTransformation[i] = HAL::eprGetFloat(EPR_AUTOLEVEL_MATRIX+((int)i)<<2);
+            Printer::autolevelTransformation[i] = HAL::eprGetFloat(EPR_AUTOLEVEL_MATRIX + (((int)i) << 2));
+        if(isnan(Printer::autolevelTransformation[0])) { // a bug caused storage of matrix at the wrong place. Read from old position instead.
+            for(uint8_t i=0; i<9; i++)
+                Printer::autolevelTransformation[i] = HAL::eprGetFloat((EPR_AUTOLEVEL_MATRIX + (int)i) << 2);
+        }
         Printer::setAutolevelActive(HAL::eprGetByte(EPR_AUTOLEVEL_ACTIVE));
-        //Com::printArrayFLN(Com::tInfo,Printer::autolevelTransformation,9,6);
+        Com::printArrayFLN(Com::tInfo,Printer::autolevelTransformation,9,6);
     }
 #endif
     // now the extruder
@@ -591,7 +600,17 @@ void EEPROM::readDataFromEEPROM()
             HAL::eprSetFloat(EPR_DELTA_RADIUS_CORR_B,DELTA_RADIUS_CORRECTION_B);
             HAL::eprSetFloat(EPR_DELTA_RADIUS_CORR_C,DELTA_RADIUS_CORRECTION_C);
         }
+        if(version<7) {
+            HAL::eprSetFloat(EPR_DELTA_MAX_RADIUS,DELTA_MAX_RADIUS);
+            HAL::eprSetFloat(EPR_DELTA_DIAGONAL_CORR_A,DELTA_DIAGONAL_CORRECTION_A);
+            HAL::eprSetFloat(EPR_DELTA_DIAGONAL_CORR_B,DELTA_DIAGONAL_CORRECTION_B);
+            HAL::eprSetFloat(EPR_DELTA_DIAGONAL_CORR_C,DELTA_DIAGONAL_CORRECTION_C);
+        }
 #endif
+        if(version<7) {
+            HAL::eprSetFloat(EPR_Z_PROBE_BED_DISTANCE,Z_PROBE_BED_DISTANCE);
+        }
+
         storeDataIntoEEPROM(false); // Store new fields for changed version
     }
     Printer::updateDerivedParameter();
@@ -631,7 +650,7 @@ void EEPROM::updatePrinterUsage()
 {
 #if EEPROM_MODE!=0
     if(Printer::filamentPrinted==0) return; // No miles only enabled
-    unsigned long seconds = (HAL::timeInMilliseconds()-Printer::msecondsPrinting)/1000;
+    uint32_t seconds = (HAL::timeInMilliseconds()-Printer::msecondsPrinting)/1000;
     seconds += HAL::eprGetInt32(EPR_PRINTING_TIME);
     HAL::eprSetInt32(EPR_PRINTING_TIME,seconds);
     HAL::eprSetFloat(EPR_PRINTING_DISTANCE,HAL::eprGetFloat(EPR_PRINTING_DISTANCE)+Printer::filamentPrinted*0.001);
@@ -708,6 +727,7 @@ void EEPROM::writeSettings()
     writeFloat(EPR_Z_MAX_TRAVEL_ACCEL,Com::tEPRZTravelAcceleration);
     writeFloat(EPR_DELTA_DIAGONAL_ROD_LENGTH,Com::tEPRDiagonalRodLength);
     writeFloat(EPR_DELTA_HORIZONTAL_RADIUS,Com::tEPRHorizontalRadius);
+    writeFloat(EPR_DELTA_MAX_RADIUS,Com::tEPRDeltaMaxRadius);
     writeInt(EPR_DELTA_SEGMENTS_PER_SECOND_MOVE,Com::tEPRSegmentsPerSecondTravel);
     writeInt(EPR_DELTA_SEGMENTS_PER_SECOND_PRINT,Com::tEPRSegmentsPerSecondPrint);
     writeInt(EPR_DELTA_TOWERX_OFFSET_STEPS,Com::tEPRTowerXOffset);
@@ -719,6 +739,9 @@ void EEPROM::writeSettings()
     writeFloat(EPR_DELTA_RADIUS_CORR_A,Com::tDeltaRadiusCorrectionA);
     writeFloat(EPR_DELTA_RADIUS_CORR_B,Com::tDeltaRadiusCorrectionB);
     writeFloat(EPR_DELTA_RADIUS_CORR_C,Com::tDeltaRadiusCorrectionC);
+    writeFloat(EPR_DELTA_DIAGONAL_CORR_A,Com::tDeltaDiagonalCorrectionA);
+    writeFloat(EPR_DELTA_DIAGONAL_CORR_B,Com::tDeltaDiagonalCorrectionB);
+    writeFloat(EPR_DELTA_DIAGONAL_CORR_C,Com::tDeltaDiagonalCorrectionC);
 #else
     writeFloat(EPR_X_MAX_ACCEL,Com::tEPRXAcceleration);
     writeFloat(EPR_Y_MAX_ACCEL,Com::tEPRYAcceleration);
@@ -730,6 +753,7 @@ void EEPROM::writeSettings()
 #endif
 #if FEATURE_Z_PROBE
     writeFloat(EPR_Z_PROBE_HEIGHT,Com::tZProbeHeight);
+    writeFloat(EPR_Z_PROBE_BED_DISTANCE,Com::tZProbeBedDitance);
     writeFloat(EPR_Z_PROBE_SPEED,Com::tZProbeSpeed);
     writeFloat(EPR_Z_PROBE_XY_SPEED,Com::tZProbeSpeedXY);
     writeFloat(EPR_Z_PROBE_X_OFFSET,Com::tZProbeOffsetX);

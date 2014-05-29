@@ -12,7 +12,7 @@
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+    along with Repetier-Firmware.  If not, see <http://www.gnu.org/licenses/>.
 
     This firmware is a nearly complete rewrite of the sprinter firmware
     by kliment (https://github.com/kliment/Sprinter)
@@ -23,10 +23,6 @@
 #include "ui.h"
 
 #if SDSUPPORT
-
-#ifndef SD_ALLOW_LONG_NAMES
-#define SD_ALLOW_LONG_NAMES false
-#endif
 
 char tempLongFilename[LONG_FILENAME_LENGTH+1];
 char fullName[LONG_FILENAME_LENGTH*SD_MAX_FOLDER_DEPTH+SD_MAX_FOLDER_DEPTH+1];
@@ -39,15 +35,6 @@ SDCard::SDCard()
     sdactive = false;
     savetosd = false;
     Printer::setAutomount(false);
-    //power to SD reader
-#if SDPOWER > -1
-    SET_OUTPUT(SDPOWER);
-    WRITE(SDPOWER,HIGH);
-#endif
-#if defined(SDCARDDETECT) && SDCARDDETECT>-1
-    SET_INPUT(SDCARDDETECT);
-    WRITE(SDCARDDETECT,HIGH);
-#endif
 }
 
 void SDCard::automount()
@@ -88,6 +75,10 @@ void SDCard::initsd()
 {
     sdactive = false;
 #if SDSS >- 1
+#if defined(SDCARDDETECT) && SDCARDDETECT>-1
+    if(READ(SDCARDDETECT) != SDCARDDETECTINVERTED)
+        return;
+#endif
     /*if(dir[0].isOpen())
         dir[0].close();*/
     if(!fat.begin(SDSS,SPI_FULL_SPEED))
@@ -119,7 +110,7 @@ void SDCard::unmount()
     savetosd = false;
     Printer::setAutomount(false);
     Printer::setMenuMode(MENU_MODE_SD_MOUNTED+MENU_MODE_SD_PAUSED+MENU_MODE_SD_PRINTING,false);
-#if UI_DISPLAY_TYPE!=0
+#if UI_DISPLAY_TYPE!=0 && SDSUPPORT
     uid.cwd[0]='/';
     uid.cwd[1]=0;
     uid.folderLevel=0;
@@ -138,18 +129,29 @@ void SDCard::pausePrint(bool intern)
     if(!sd.sdactive) return;
     sdmode = false;
     Printer::setMenuMode(MENU_MODE_SD_PAUSED,true);
+#if FEATURE_MEMORY_POSITION
     if(intern) {
+        Commands::waitUntilEndOfAllBuffers();
         Printer::MemoryPosition();
-        Printer::moveToReal(Printer::xMin,Printer::yMin+Printer::yLength,Printer::currentPosition[Z_AXIS],Printer::currentPosition[E_AXIS],Printer::maxFeedrate[X_AXIS]);
+#if DRIVE_SYSTEM==3
+        Printer::moveToReal(0,0.9*EEPROM::deltaMaxRadius(),IGNORE_COORDINATE,IGNORE_COORDINATE,Printer::maxFeedrate[X_AXIS]);
+#else
+        Printer::moveToReal(Printer::xMin,Printer::yMin+Printer::yLength,IGNORE_COORDINATE,IGNORE_COORDINATE,Printer::maxFeedrate[X_AXIS]);
+#endif
     }
+#endif
 }
 void SDCard::continuePrint(bool intern)
 {
     if(!sd.sdactive) return;
     Printer::setMenuMode(MENU_MODE_SD_PAUSED,false);
+#if FEATURE_MEMORY_POSITION
     if(intern) {
         Printer::GoToMemoryPosition(true,true,false,true,Printer::maxFeedrate[X_AXIS]);
+        Printer::GoToMemoryPosition(false,false,true,false,Printer::maxFeedrate[Z_AXIS]);
     }
+#endif
+    sdmode = true;
 }
 void SDCard::stopPrint()
 {
@@ -304,24 +306,16 @@ char *SDCard::createFilename(char *buffer,const dir_t &p)
 bool SDCard::showFilename(const uint8_t *name)
 {
     if (*name == DIR_NAME_DELETED || *name == '.') return false;
-#if !SD_ALLOW_LONG_NAMES
-    uint8_t i=11;
-    while(i--)
-    {
-        if(*name=='~') return false;
-        name++;
-    }
-#endif
     return true;
 }
 
-int8_t stricmp(const char* s1, const char* s2)
+int8_t RFstricmp(const char* s1, const char* s2)
 {
     while(*s1 && (tolower(*s1) == tolower(*s2)))
         s1++,s2++;
     return (const uint8_t)tolower(*s1)-(const uint8_t)tolower(*s2);
 }
-int8_t strnicmp(const char* s1, const char* s2, size_t n)
+int8_t RFstrnicmp(const char* s1, const char* s2, size_t n)
 {
     while(n--)
     {

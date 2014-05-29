@@ -66,6 +66,7 @@ FSTRINGVAR(tUnknownCommand)
 FSTRINGVAR(tFreeRAM)
 FSTRINGVAR(tXColon)
 FSTRINGVAR(tSlash)
+FSTRINGVAR(tSpaceSlash)
 FSTRINGVAR(tSpaceXColon)
 FSTRINGVAR(tSpaceYColon)
 FSTRINGVAR(tSpaceZColon)
@@ -76,6 +77,7 @@ FSTRINGVAR(tSpaceAtColon)
 FSTRINGVAR(tSpaceT)
 FSTRINGVAR(tSpaceRaw)
 FSTRINGVAR(tSpaceAt)
+FSTRINGVAR(tSpaceBAtColon)
 FSTRINGVAR(tColon)
 FSTRINGVAR(tSpeedMultiply);
 FSTRINGVAR(tFlowMultiply);
@@ -130,7 +132,11 @@ FSTRINGVAR(tDeltaAlphaC)
 FSTRINGVAR(tDeltaRadiusCorrectionA)
 FSTRINGVAR(tDeltaRadiusCorrectionB)
 FSTRINGVAR(tDeltaRadiusCorrectionC)
+FSTRINGVAR(tDeltaDiagonalCorrectionA)
+FSTRINGVAR(tDeltaDiagonalCorrectionB)
+FSTRINGVAR(tDeltaDiagonalCorrectionC)
 FSTRINGVAR(tDBGDeltaNoMoveinDSegment)
+FSTRINGVAR(tEPRDeltaMaxRadius)
 #endif // DRIVE_SYSTEM
 #if DRIVE_SYSTEM==4
 FSTRINGVAR(tInvalidDeltaCoordinate)
@@ -208,14 +214,13 @@ FSTRINGVAR(tHitZProbe)
 FSTRINGVAR(tZProbeAverage)
 FSTRINGVAR(tZProbeZReset)
 FSTRINGVAR(tAutolevelReset)
+FSTRINGVAR(tZProbeBedDitance)
 #endif
 FSTRINGVAR(tAutolevelEnabled)
 FSTRINGVAR(tAutolevelDisabled)
-#if MAX_HARDWARE_ENDSTOP_Z
 FSTRINGVAR(tZProbeFailed)
 FSTRINGVAR(tZProbeMax)
 FSTRINGVAR(tZProbePrinterHeight)
-#endif
 
 #ifdef WAITING_IDENTIFIER
 FSTRINGVAR(tWait)
@@ -347,7 +352,7 @@ FSTRINGVAR(tSDErrorCode)
 
 
 
-static void printNumber(unsigned long n);
+static void printNumber(uint32_t n);
 static void printWarningF(FSTRINGPARAM(text));
 static void printInfoF(FSTRINGPARAM(text));
 static void printErrorF(FSTRINGPARAM(text));
@@ -358,19 +363,19 @@ static void printFLN(FSTRINGPARAM(text));
 static void printF(FSTRINGPARAM(text));
 static void printF(FSTRINGPARAM(text),int value);
 static void printF(FSTRINGPARAM(text),const char *msg);
-static void printF(FSTRINGPARAM(text),long value);
-static void printF(FSTRINGPARAM(text),unsigned long value);
+static void printF(FSTRINGPARAM(text),int32_t value);
+static void printF(FSTRINGPARAM(text),uint32_t value);
 static void printF(FSTRINGPARAM(text),float value,uint8_t digits=2);
 static void printFLN(FSTRINGPARAM(text),int value);
-static void printFLN(FSTRINGPARAM(text),long value);
-static void printFLN(FSTRINGPARAM(text),unsigned long value);
+static void printFLN(FSTRINGPARAM(text),int32_t value);
+static void printFLN(FSTRINGPARAM(text),uint32_t value);
 static void printFLN(FSTRINGPARAM(text),const char *msg);
 static void printFLN(FSTRINGPARAM(text),float value,uint8_t digits=2);
 static void printArrayFLN(FSTRINGPARAM(text),float *arr,uint8_t n=4,uint8_t digits=2);
 static void printArrayFLN(FSTRINGPARAM(text),long *arr,uint8_t n=4);
 static void print(long value);
-static inline void print(unsigned long value) {printNumber(value);}
-static inline void print(int value) {print((long)value);}
+static inline void print(uint32_t value) {printNumber(value);}
+static inline void print(int value) {print((int32_t)value);}
 static void print(const char *text);
 static inline void print(char c) {HAL::serialWriteByte(c);}
 static void printFloat(float number, uint8_t digits);
