@@ -78,9 +78,11 @@ FSTRINGVALUE(Com::tSpaceBColon," B:")
 FSTRINGVALUE(Com::tSpaceAtColon," @:")
 FSTRINGVALUE(Com::tSpaceT," T")
 FSTRINGVALUE(Com::tSpaceAt," @")
+FSTRINGVALUE(Com::tSpaceBAtColon," B@:")
 FSTRINGVALUE(Com::tSpaceRaw," RAW")
 FSTRINGVALUE(Com::tColon,":")
 FSTRINGVALUE(Com::tSlash,"/")
+FSTRINGVALUE(Com::tSpaceSlash," /")
 FSTRINGVALUE(Com::tSpeedMultiply,"SpeedMultiply:")
 FSTRINGVALUE(Com::tFlowMultiply,"FlowMultiply:")
 FSTRINGVALUE(Com::tFanspeed,"Fanspeed:")
@@ -215,11 +217,9 @@ FSTRINGVALUE(Com::tAutolevelReset,"Autolevel matrix reset")
 #endif
 FSTRINGVALUE(Com::tAutolevelEnabled,"Autoleveling enabled")
 FSTRINGVALUE(Com::tAutolevelDisabled,"Autoleveling disabled")
-#if MAX_HARDWARE_ENDSTOP_Z
 FSTRINGVALUE(Com::tZProbeFailed,"Z-probe failed")
 FSTRINGVALUE(Com::tZProbeMax,"Z-probe max:")
 FSTRINGVALUE(Com::tZProbePrinterHeight,"Printer height:")
-#endif // MAX_HARDWARE_ENDSTOP_Z
 //FSTRINGVALUE(Com::,"")
 #ifdef WAITING_IDENTIFIER
 FSTRINGVALUE(Com::tWait,WAITING_IDENTIFIER)
@@ -228,11 +228,12 @@ FSTRINGVALUE(Com::tWait,WAITING_IDENTIFIER)
 FSTRINGVALUE(Com::tNoEEPROMSupport,"No EEPROM support compiled.\r\n")
 #else
 #if FEATURE_Z_PROBE
-FSTRINGVALUE(Com::tZProbeHeight,"Z-probe height")
-FSTRINGVALUE(Com::tZProbeOffsetX,"Z-probe offset x")
-FSTRINGVALUE(Com::tZProbeOffsetY,"Z-probe offset y")
-FSTRINGVALUE(Com::tZProbeSpeed,"Z-probe speed")
-FSTRINGVALUE(Com::tZProbeSpeedXY,"Z-probe x-y-speed")
+FSTRINGVALUE(Com::tZProbeHeight,"Z-probe height [mm]")
+FSTRINGVALUE(Com::tZProbeBedDitance,"Max. z-probe - bed dist. [mm]")
+FSTRINGVALUE(Com::tZProbeOffsetX,"Z-probe offset x [mm]")
+FSTRINGVALUE(Com::tZProbeOffsetY,"Z-probe offset y [mm]")
+FSTRINGVALUE(Com::tZProbeSpeed,"Z-probe speed [mm/s]")
+FSTRINGVALUE(Com::tZProbeSpeedXY,"Z-probe x-y-speed [mm/s]")
 FSTRINGVALUE(Com::tZProbeX1,"Z-probe X1")
 FSTRINGVALUE(Com::tZProbeY1,"Z-probe Y1")
 FSTRINGVALUE(Com::tZProbeX2,"Z-probe X2")
@@ -282,6 +283,11 @@ FSTRINGVALUE(Com::tEPRSegmentsPerSecondTravel,"Segments/s for travel")
 FSTRINGVALUE(Com::tEPRTowerXOffset,"Tower X endstop offset [steps]")
 FSTRINGVALUE(Com::tEPRTowerYOffset,"Tower Y endstop offset [steps]")
 FSTRINGVALUE(Com::tEPRTowerZOffset,"Tower Z endstop offset [steps]")
+
+FSTRINGVALUE(Com::tEPRDeltaMaxRadius,"Max. radius [mm]")
+FSTRINGVALUE(Com::tDeltaDiagonalCorrectionA,"Corr. diagonal A [mm]")
+FSTRINGVALUE(Com::tDeltaDiagonalCorrectionB,"Corr. diagonal B [mm]")
+FSTRINGVALUE(Com::tDeltaDiagonalCorrectionC,"Corr. diagonal C [mm]")
 
 #else
 FSTRINGVALUE(Com::tEPRMaxZJerk,"Max. Z-jerk [mm/s]")
@@ -406,11 +412,11 @@ void Com::printF(FSTRINGPARAM(text),int value) {
     printF(text);
     print(value);
 }
-void Com::printF(FSTRINGPARAM(text),long value) {
+void Com::printF(FSTRINGPARAM(text),int32_t value) {
     printF(text);
     print(value);
 }
-void Com::printF(FSTRINGPARAM(text),unsigned long value) {
+void Com::printF(FSTRINGPARAM(text),uint32_t value) {
     printF(text);
     printNumber(value);
 }
@@ -419,12 +425,12 @@ void Com::printFLN(FSTRINGPARAM(text),int value) {
     print(value);
     println();
 }
-void Com::printFLN(FSTRINGPARAM(text),long value) {
+void Com::printFLN(FSTRINGPARAM(text),int32_t value) {
     printF(text);
     print(value);
     println();
 }
-void Com::printFLN(FSTRINGPARAM(text),unsigned long value) {
+void Com::printFLN(FSTRINGPARAM(text),uint32_t value) {
     printF(text);
     printNumber(value);
     println();
@@ -452,7 +458,7 @@ void Com::print(long value) {
     printNumber(value);
 }
 
-void Com::printNumber(unsigned long n) {
+void Com::printNumber(uint32_t n) {
   char buf[11]; // Assumes 8-bit chars plus zero byte.
   char *str = &buf[10];
   *str = '\0';
@@ -470,7 +476,7 @@ void Com::printArrayFLN(FSTRINGPARAM(text),float *arr,uint8_t n,uint8_t digits) 
         printF(Com::tSpace,arr[i],digits);
     println();
 }
-void Com::printArrayFLN(FSTRINGPARAM(text),long *arr,uint8_t n) {
+void Com::printArrayFLN(FSTRINGPARAM(text),int32_t *arr,uint8_t n) {
     printF(text);
     for(uint8_t i=0; i<n; i++)
         printF(Com::tSpace,arr[i]);
