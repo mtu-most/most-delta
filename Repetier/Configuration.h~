@@ -171,7 +171,11 @@ Overridden if EEPROM activated.*/
 #define EXT0_X_OFFSET 0
 #define EXT0_Y_OFFSET 0
 // for skeinforge 40 and later, steps to pull the plasic 1 mm inside the extruder, not out.  Overridden if EEPROM activated.
+<<<<<<< HEAD
 #define EXT0_STEPS_PER_MM 92
+=======
+#define EXT0_STEPS_PER_MM 90
+>>>>>>> 75aa0fd8ffa83c6a008beb12241a7e502f8bfa70
 // What type of sensor is used?
 // 1 is 100k thermistor (Epcos B57560G0107F000 - RepRap-Fab.org and many other)
 // 2 is 200k thermistor
@@ -617,7 +621,12 @@ on this endstop.
 #if DRIVE_SYSTEM==3
 /** \brief Delta rod length
 */
+<<<<<<< HEAD
 #define DELTA_DIAGONAL_ROD 250.5 // mm
+=======
+#define DELTA_DIAGONAL_ROD 250 // mm
+>>>>>>> 75aa0fd8ffa83c6a008beb12241a7e502f8bfa70
+
 
 /*  =========== Parameter essential for delta calibration ===================
 
@@ -666,7 +675,11 @@ on this endstop.
 
 /** \brief Printer radius in mm, measured from the center of the print area to the vertical smooth rod.
 */
+<<<<<<< HEAD
 #define PRINTER_RADIUS 126
+=======
+#define PRINTER_RADIUS 175
+>>>>>>> 75aa0fd8ffa83c6a008beb12241a7e502f8bfa70
 
 /** Remove comment for more precise delta moves. Needs a bit more computation time. */
 //#define EXACT_DELTA_MOVES
@@ -722,9 +735,15 @@ Mega. Used only for nonlinear systems like delta or tuga. */
 #define MAX_FEEDRATE_Z 2000
 
 /** Home position speed in mm/s. Overridden if EEPROM activated. */
+<<<<<<< HEAD
 #define HOMING_FEEDRATE_X 100
 #define HOMING_FEEDRATE_Y 100
 #define HOMING_FEEDRATE_Z 100
+=======
+#define HOMING_FEEDRATE_X 150
+#define HOMING_FEEDRATE_Y 150
+#define HOMING_FEEDRATE_Z 150
+>>>>>>> 75aa0fd8ffa83c6a008beb12241a7e502f8bfa70
 
 /** Set order of axis homing. Use HOME_ORDER_XYZ and replace XYZ with your order. */
 #define HOMING_ORDER HOME_ORDER_ZXY
