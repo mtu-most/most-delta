@@ -199,7 +199,7 @@ Overridden if EEPROM activated.*/
 #define EXT0_STEP_PIN E0_STEP_PIN
 #define EXT0_DIR_PIN E0_DIR_PIN
 // set to false/true for normal / inverse direction
-#define EXT0_INVERSE false
+#define EXT0_INVERSE true
 #define EXT0_ENABLE_PIN E0_ENABLE_PIN
 // For Inverting Stepper Enable Pins (Active Low) use 0, Non Inverting (Active High) use 1
 #define EXT0_ENABLE_ON false
@@ -535,9 +535,9 @@ on this endstop.
 #define DISABLE_E false
 
 // Inverting axis direction
-#define INVERT_X_DIR false
-#define INVERT_Y_DIR false
-#define INVERT_Z_DIR false
+#define INVERT_X_DIR true
+#define INVERT_Y_DIR true
+#define INVERT_Z_DIR true
 
 //// ENDSTOP SETTINGS:
 // Sets direction of endstops when homing; 1=MAX, -1=MIN
@@ -586,7 +586,7 @@ on this endstop.
 // If EEPROM is enabled these values will be overidden with the values in the EEPROM
 #define X_MAX_LENGTH 200
 #define Y_MAX_LENGTH 200
-#define Z_MAX_LENGTH 246.6
+#define Z_MAX_LENGTH 247
 
 // Coordinates for the minimum axis. Can also be negative if you want to have the bed start at 0 and the printer can go to the left side
 // of the bed. Maximum coordinate is given by adding the above X_MAX_LENGTH values.
@@ -617,7 +617,7 @@ on this endstop.
 #if DRIVE_SYSTEM==3
 /** \brief Delta rod length
 */
-#define DELTA_DIAGONAL_ROD 251 // mm
+#define DELTA_DIAGONAL_ROD 250.5 // mm
 
 
 /*  =========== Parameter essential for delta calibration ===================
@@ -667,7 +667,7 @@ on this endstop.
 
 /** \brief Printer radius in mm, measured from the center of the print area to the vertical smooth rod.
 */
-#define PRINTER_RADIUS 124.9
+#define PRINTER_RADIUS 126
 
 /** Remove comment for more precise delta moves. Needs a bit more computation time. */
 //#define EXACT_DELTA_MOVES
