@@ -16,7 +16,7 @@ A complete build process is available at http://www.appropedia.org/Delta_Build_O
 </ul>
 
 <h2>Overview</h2>
-The MOST delta printer is derived from the original Rostock (http://www.thingiverse.com/thing:17175). The design goal is to stay as true to RepRap ideals as possible, i.e. contain as many printed parts as possible. It's a be very robust design and easier to build and calibrate than most delta printers.
+The MOST delta printer is derived from the original Rostock (http://www.thingiverse.com/thing:17175). The design goal is to stay as true to RepRap ideals as possible, i.e. contain as many printed parts as possible. It's a very robust design and easier to build and calibrate than most delta printers.
 
 <h2>Easter Egg in the SCAD</h2>
 Dr. Who fans will want to keep an eye out!
