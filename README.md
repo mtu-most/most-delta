@@ -1,5 +1,6 @@
 MOST-delta
 ==========
+Development of the MOST Delta has halted as it has been superceded by <a href="https://github.com/phidiasllc/athena">Athena</a>.
 
 A complete build process is available at http://www.appropedia.org/Delta_Build_Overview:MOST.
 
